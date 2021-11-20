@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "/": "./",
+    "./": "./",
+    "std/": "https://deno.land/std@0.115.0/",
+    "image_script": "https://deno.land/x/imagescript@1.2.9/mod.ts",
+    "reflect_metadata": "https://deno.land/x/reflect_metadata@v0.1.12-2/mod.ts"
+  }
+}
