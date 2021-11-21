@@ -1,10 +1,11 @@
 import { Reflect } from "reflect_metadata";
-
+import { cron } from "deno_cron";
 import { deferred, Deferred } from "std/async/mod.ts";
 import { parse } from "std/encoding/yaml.ts";
-import { fromFileUrl, toFileUrl, dirname, join } from "std/path/mod.ts";
 import { exists } from "std/fs/mod.ts";
+import { encode } from "std/encoding/base64.ts";
 import * as log from "std/log/mod.ts";
+import * as path from "std/path/mod.ts";
 
 interface CqMessageSegment {
   type: string;
@@ -36,27 +37,27 @@ interface BotEventListener {
   app: string;
   listen: string;
   filter: MessageFilter;
-  handler: (e: BotEvent) => Promise<void> | void;
+  handler: (e: BotEvent) => void;
 }
 
 interface BotCronListener {
   app: string;
   cron: string;
-  handler: (e: BotEvent) => Promise<void> | void;
+  handler: () => Promise<void> | void;
 }
 
 type BotListener = BotEventListener | BotCronListener;
 
-export type MessageFilter = Partial<{
+type MessageFilter = Partial<{
   pattern: RegExp;
   at: boolean;
   admin: boolean;
   image: boolean;
 }>;
 
-export const rootPath = dirname(fromFileUrl(import.meta.url));
-const appsPath = join(rootPath, "apps");
-const configPath = join(rootPath, "config.yml");
+export const rootPath = path.dirname(path.fromFileUrl(import.meta.url));
+const appsPath = path.join(rootPath, "apps");
+const configPath = path.join(rootPath, "config.yml");
 const configFile = await Deno.readTextFile(configPath);
 export const config = parse(configFile) as Record<string, any>;
 
@@ -67,20 +68,21 @@ export function listen(name: string): MethodDecorator {
 function filter(options: MessageFilter): MethodDecorator;
 function filter(pattern: RegExp, options?: MessageFilter): MethodDecorator;
 function filter(a: RegExp | MessageFilter, b?: MessageFilter): MethodDecorator {
-  const [pattern, options] = a instanceof RegExp ? [a, b] : [null, b];
+  const [pattern, options] = a instanceof RegExp ? [a, b] : [null, a];
   return (target, key) =>
     Reflect.defineMetadata("filter", { pattern, ...options }, target, key);
 }
 export { filter };
 
-export abstract class BotApp {
-  key = crypto.randomUUID();
-  name = this.key;
+export class BotApp {
+  name = "";
   description = "";
   log = log;
-  config: any;
-  assets: any;
+  config: Record<string, any> = {};
+  assetPath = "";
+  constructor(public key: string, public api: BotWs["api"]) {}
   init(): Promise<void> | void {}
+  test(): Promise<void> | void {}
 }
 
 export class BotEvent {
@@ -89,7 +91,7 @@ export class BotEvent {
   at = false;
   admin = false;
   image = false;
-  constructor(public data: CqEventData, public bot: BotWs) {
+  constructor(public data: CqEventData, public api: BotWs["api"]) {
     this.admin = config.admins.includes(data.user_id);
     if (data.post_type.startsWith("message") && data.message) {
       this.at = true;
@@ -114,23 +116,27 @@ export class BotEvent {
 
   operation(operation: any): Promise<any> {
     const data = { context: this.data, operation };
-    return this.bot.api[".handle_quick_operation"](data);
+    return this.api[".handle_quick_operation"](data);
   }
 
   reply(
-    msg: string | CqMessageSegment | (string | CqMessageSegment)[],
+    msg:
+      | string
+      | CqMessageSegment
+      | (string | Uint8Array | CqMessageSegment | undefined | false)[],
     args: Record<string, any> = {}
   ): Promise<any> | void {
     if (!msg) return;
     if (this.data.message_type !== "group") args.at_sender = false;
-    const reply =
-      typeof msg === "string"
-        ? msg
-        : Array.isArray(msg)
-        ? msg.map((v) =>
-            typeof v === "string" ? { type: "text", data: { text: v } } : v
-          )
-        : [msg];
+    const reply = (Array.isArray(msg) ? msg : [msg])
+      .filter((v): v is string | Uint8Array | CqMessageSegment => Boolean(v))
+      .map((v) =>
+        typeof v === "string"
+          ? { type: "text", data: { text: v } }
+          : v instanceof Uint8Array
+          ? { type: "image", data: { file: `base64://${encode(v)}` } }
+          : v
+      );
     return this.operation({ reply, ...args });
   }
 }
@@ -150,13 +156,18 @@ export class BotWs {
   #defs: Record<string, Deferred<CqResponseData["data"]>> = {};
   #listeners: BotEventListener[] = [];
 
-  connect(): Promise<void> {
-    const openWs = deferred<void>();
+  connect() {
     this.#ws = new WebSocket(config.url);
-    this.#ws.onopen = () => openWs.resolve();
+    this.#ws.onopen = () => log.info(`${config.url} 连接成功`);
     this.#ws.onmessage = this.onMessage.bind(this);
-    this.#ws.onclose = () => console.log("[ERROR] ws closed");
-    return openWs;
+    this.#ws.onclose = () => {
+      log.warning(`${config.url} 已关闭`);
+      setTimeout(() => {
+        log.info(`${config.url} 正在尝试重连...`);
+        this.connect();
+      }, 10000);
+    };
+    this.#ws.onerror = (e) => log.error(`${config.url} 错误: ${e}`);
   }
 
   async onMessage(event: MessageEvent) {
@@ -167,7 +178,7 @@ export class BotWs {
         this.#defs[res.echo].resolve(res.data);
       } else {
         this.#defs[res.echo].reject(res.data);
-        console.error("%o", res);
+        log.error(res);
       }
       delete this.#defs[res.echo];
       return;
@@ -184,7 +195,7 @@ export class BotWs {
     const subType = res.sub_type;
     const subSubType = res.honor_type;
 
-    const botEvent = new BotEvent(res, this);
+    const botEvent = new BotEvent(res, this.api);
 
     await this.emit(`${postType}`, botEvent);
     await this.emit(`${postType}.${type}`, botEvent);
@@ -194,7 +205,7 @@ export class BotWs {
   }
 
   async emit(name: string, e: BotEvent) {
-    for (const { filter, listen, handler } of this.#listeners) {
+    for (const { app, filter, listen, handler } of this.#listeners) {
       const { at, image, admin, pattern } = filter;
       if (listen !== name) continue;
       if (at && !e.at) continue;
@@ -205,7 +216,12 @@ export class BotWs {
         if (!match) continue;
         e.match = match;
       }
-      await handler(e);
+      try {
+        await handler(e);
+      } catch (e) {
+        log.error(`${app}发生了错误：`);
+        log.error(e);
+      }
     }
   }
 
@@ -220,39 +236,6 @@ export class BotWs {
 
 export class BotAppManager {
   apps: BotApp[] = [];
-
-  async loadApps() {
-    const appMainFiles = [];
-    for await (const item of Deno.readDir(appsPath)) {
-      if (item.isFile) appMainFiles.push(item.name);
-      if (item.isDirectory) appMainFiles.push(join(item.name, "index.ts"));
-    }
-
-    for (const appMainFile of appMainFiles) {
-      const appPath = join(rootPath, "apps", appMainFile);
-      if (!(await exists(appPath))) continue;
-      const appModule = await import(toFileUrl(appPath).href);
-      const App = appModule.default;
-      if (!App) continue;
-      const appIns: BotApp = new App();
-      appIns.config = config.apps?.[appIns.key];
-      this.apps.push(appIns);
-      await appIns.init?.();
-      console.log(`[INFO] 已加载应用 ${appIns.key}`);
-    }
-  }
-
-  async run() {
-    const botWs = new BotWs();
-    await botWs.connect();
-    await this.loadApps();
-    for (const app of this.apps) {
-      const metadata = BotAppManager.getMetadata(app);
-      for (const item of metadata) {
-        if ("listen" in item) botWs.listen(item);
-      }
-    }
-  }
 
   static getMetadata(ins: BotApp): BotListener[] {
     return Object.getOwnPropertyNames(Object.getPrototypeOf(ins))
@@ -270,5 +253,40 @@ export class BotAppManager {
         return null;
       })
       .filter((v): v is BotListener => Boolean(v));
+  }
+
+  async run() {
+    const appModules = [];
+    for await (const v of Deno.readDir(appsPath)) {
+      if (!v.isFile && !v.isDirectory) continue;
+      const key = path.parse(v.name).name;
+      const index = v.isFile ? v.name : path.join(v.name, "index.ts");
+      const absoluteIndex = path.join(rootPath, "apps", index);
+      if (!(await exists(absoluteIndex))) continue;
+      const appModule = await import(path.toFileUrl(absoluteIndex).href);
+      const App: any = appModule.default;
+      if (!App) continue;
+      appModules.push({ key, module: App });
+    }
+
+    const botWs = new BotWs();
+    botWs.connect();
+
+    for (const { key, module: App } of appModules) {
+      const appIns: BotApp = new App(key, botWs.api);
+      appIns.config = config.apps?.[key] ?? {};
+      appIns.assetPath = path.join(rootPath, "assets", key);
+      this.apps.push(appIns);
+    }
+
+    for (const app of this.apps) {
+      await app.init();
+      log.info(`已加载应用 ${app.key}${app.name ? `(${app.name})` : ""}`);
+      const metadata = BotAppManager.getMetadata(app);
+      for (const v of metadata) {
+        if ("listen" in v) botWs.listen(v);
+        if ("cron" in v) cron(v.cron, v.handler);
+      }
+    }
   }
 }
