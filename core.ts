@@ -16,11 +16,12 @@ interface CqEventData {
   time: number;
   self_id: number;
   post_type: string;
-  message_type?: string;
-  message?: CqMessageSegment[];
-  group_id?: number;
-  sub_type?: string;
-  honor_type?: string;
+  message_type: string;
+  message: CqMessageSegment[];
+  group_id: number;
+  sub_type: string;
+  honor_type: string;
+  raw_message: string;
   [key: string]: any;
 }
 
@@ -55,14 +56,21 @@ type MessageFilter = Partial<{
   image: boolean;
 }>;
 
+type BotMessage =
+  | undefined
+  | string
+  | Uint8Array
+  | CqMessageSegment
+  | (string | Uint8Array | CqMessageSegment | undefined | false)[];
+
 export const rootPath = path.dirname(path.fromFileUrl(import.meta.url));
 const appsPath = path.join(rootPath, "apps");
 const configPath = path.join(rootPath, "config.yml");
 const configFile = await Deno.readTextFile(configPath);
 export const config = parse(configFile) as Record<string, any>;
 
-export function listen(name: string): MethodDecorator {
-  return (target, key) => Reflect.defineMetadata("listen", name, target, key);
+export function listen(str: string): MethodDecorator {
+  return (target, key) => Reflect.defineMetadata("listen", str, target, key);
 }
 
 function filter(options: MessageFilter): MethodDecorator;
@@ -74,23 +82,49 @@ function filter(a: RegExp | MessageFilter, b?: MessageFilter): MethodDecorator {
 }
 export { filter };
 
+export function name(str: string): MethodDecorator {
+  return (target, key) => Reflect.defineMetadata("name", str, target, key);
+}
+
+export function description(str: string): MethodDecorator {
+  return (target, key) =>
+    Reflect.defineMetadata("description", str, target, key);
+}
+
+export function cqMessage(msg: BotMessage): CqMessageSegment[] {
+  if (!msg) return [];
+  return (Array.isArray(msg) ? msg : [msg])
+    .filter((v): v is string | Uint8Array | CqMessageSegment => Boolean(v))
+    .map((v) =>
+      typeof v === "string"
+        ? { type: "text", data: { text: v } }
+        : v instanceof Uint8Array
+        ? { type: "image", data: { file: `base64://${encode(v)}` } }
+        : v
+    );
+}
+
 export class BotApp {
   name = "";
   description = "";
   log = log;
+  state: Record<string, any> = {};
   config: Record<string, any> = {};
   assetPath = "";
   constructor(public key: string, public api: BotWs["api"]) {}
+  getAsset(name: string) {
+    return path.join(this.assetPath, name);
+  }
   init(): Promise<void> | void {}
   test(): Promise<void> | void {}
 }
 
 export class BotEvent {
-  match: string[] = [];
   cmd = "";
   at = false;
   admin = false;
   image = false;
+  match: string[] = [];
   constructor(public data: CqEventData, public api: BotWs["api"]) {
     this.admin = config.admins.includes(data.user_id);
     if (data.post_type.startsWith("message") && data.message) {
@@ -119,25 +153,9 @@ export class BotEvent {
     return this.api[".handle_quick_operation"](data);
   }
 
-  reply(
-    msg:
-      | string
-      | CqMessageSegment
-      | (string | Uint8Array | CqMessageSegment | undefined | false)[],
-    args: Record<string, any> = {}
-  ): Promise<any> | void {
+  reply(msg: BotMessage, args: Record<string, any> = {}): Promise<any> | void {
     if (!msg) return;
-    if (this.data.message_type !== "group") args.at_sender = false;
-    const reply = (Array.isArray(msg) ? msg : [msg])
-      .filter((v): v is string | Uint8Array | CqMessageSegment => Boolean(v))
-      .map((v) =>
-        typeof v === "string"
-          ? { type: "text", data: { text: v } }
-          : v instanceof Uint8Array
-          ? { type: "image", data: { file: `base64://${encode(v)}` } }
-          : v
-      );
-    return this.operation({ reply, ...args });
+    return this.operation({ reply: cqMessage(msg), ...args });
   }
 }
 
@@ -158,16 +176,17 @@ export class BotWs {
 
   connect() {
     this.#ws = new WebSocket(config.url);
-    this.#ws.onopen = () => log.info(`${config.url} 连接成功`);
+    this.#ws.onopen = () => log.info(`WebSocket 连接成功(${config.url})`);
     this.#ws.onmessage = this.onMessage.bind(this);
     this.#ws.onclose = () => {
-      log.warning(`${config.url} 已关闭`);
+      log.warning(`WebSocket 已关闭，将在 10 秒后重连`);
       setTimeout(() => {
-        log.info(`${config.url} 正在尝试重连...`);
+        log.info(`WebSocket 正在尝试重连(${config.url})...`);
         this.connect();
       }, 10000);
     };
-    this.#ws.onerror = (e) => log.error(`${config.url} 错误: ${e}`);
+    this.#ws.onerror = (e) =>
+      log.error(`WebSocket 错误: ${(e as ErrorEvent).message}`);
   }
 
   async onMessage(event: MessageEvent) {

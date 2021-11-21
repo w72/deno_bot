@@ -1,3 +1,13 @@
 /.vscode/launch.json
 /config.yml
 /assets/
+/assets.7z
+/assets.zip
+/*.db
+/apps/*
+!/apps/meme
+!/apps/pcr-gacha
+!/apps/pcr-lucky
+!/apps/setu.ts
+!/apps/nbnhhsh.ts
+!/apps/message.ts
