@@ -112,8 +112,8 @@ export class BotApp {
   config: Record<string, any> = {};
   assetPath = "";
   constructor(public key: string, public api: BotWs["api"]) {}
-  asset(name: string) {
-    return path.join(this.assetPath, name);
+  asset(...paths: string[]) {
+    return path.join(this.assetPath, ...paths);
   }
   init(): Promise<void> | void {}
   test(): Promise<void> | void {}
