@@ -52,7 +52,7 @@ export default class App extends BotApp {
   @listen("message")
   @filter(/^老婆$/, { at: true })
   async onLaoPo(e: BotEvent) {
-    const pic = await Deno.readFile(this.getAsset("laopo.jpg"));
+    const pic = await Deno.readFile(this.asset("laopo.jpg"));
     return e.reply(pic);
   }
 
