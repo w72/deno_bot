@@ -96,6 +96,7 @@ export default class App extends BotApp {
     ctx.textBaseline = "middle";
     ctx.fillText(title, 140, 99);
     ctx.restore();
+
     ctx.save();
     ctx.font = "25px sakura";
     ctx.fillStyle = "#323232";
