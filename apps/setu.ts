@@ -30,8 +30,11 @@ export default class App extends BotApp {
         if (!imgParsed) throw new Error();
         const description = `${title}\n画师：${author}\npid：${pid}`;
         await e.reply([description, imgParsed]);
+        this.log.info(`涩图下载成功`);
       } catch (err) {
         await e.reply(`涩图下载失败${err.message ? `：${err.message}` : ""}`);
+        this.log.info(`涩图下载失败`);
+        this.log.info(err);
       }
     } else if (keyword && res.code === 404) {
       await e.reply(
