@@ -1,5 +1,5 @@
-import { Image, decode } from "image_script";
 import { BotApp, BotEvent, listen, filter, config } from "/core.ts";
+import { Image, decode } from "image_script";
 
 export default class App extends BotApp {
   name = "涩图";

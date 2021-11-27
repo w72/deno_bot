@@ -5,9 +5,9 @@
 /assets.zip
 /*.db
 /apps/*
-!/apps/meme
-!/apps/pcr-gacha
-!/apps/pcr-lucky
-!/apps/setu.ts
-!/apps/nbnhhsh.ts
-!/apps/message.ts
+!/apps/meme/
+!/apps/pcr-gacha/
+!/apps/pcr-lucky/
+!/apps/setu/
+!/apps/nbnhhsh/
+!/apps/message/

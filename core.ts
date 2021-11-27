@@ -1,8 +1,8 @@
+// deno-lint-ignore-file camelcase no-explicit-any
 import { Reflect } from "reflect_metadata";
 import { cron } from "deno_cron";
 import { deferred, Deferred } from "std/async/mod.ts";
 import { parse } from "std/encoding/yaml.ts";
-import { exists } from "std/fs/mod.ts";
 import { encode } from "std/encoding/base64.ts";
 import * as log from "std/log/mod.ts";
 import * as path from "std/path/mod.ts";
@@ -119,7 +119,6 @@ export class BotApp {
     return path.join(this.assetPath, ...paths);
   }
   init(): Promise<void> | void {}
-  test(): Promise<void> | void {}
 }
 
 export class BotEvent {
@@ -213,9 +212,7 @@ class BotWebSocket {
     }
   );
 
-  constructor(private bus: BotEventBus) {
-    this.connect();
-  }
+  constructor(private bus: BotEventBus) {}
 
   connect() {
     this.#ws = new WebSocket(config.url);
@@ -270,7 +267,7 @@ class BotWebSocket {
 
 export class BotAppManager {
   apps: BotApp[] = [];
-  appModules: { key: string; module: typeof BotApp }[] = [];
+  modules: Record<string, typeof BotApp> = {};
 
   static getMetadata(ins: BotApp): BotListener[] {
     return Object.getOwnPropertyNames(Object.getPrototypeOf(ins))
@@ -292,32 +289,36 @@ export class BotAppManager {
 
   async run() {
     for await (const v of Deno.readDir(appsPath)) {
-      if (!v.isFile && !v.isDirectory) continue;
-      const key = path.parse(v.name).name;
-      const index = v.isFile ? v.name : path.join(v.name, "index.ts");
-      const absoluteIndex = path.join(rootPath, "apps", index);
-      if (!(await exists(absoluteIndex))) continue;
-      const appModule = await import(path.toFileUrl(absoluteIndex).href);
-      const App: typeof BotApp | undefined = appModule.default;
-      if (!App) continue;
-      this.appModules.push({ key, module: App });
+      if (!v.isDirectory) continue;
+      const indexPath = path.join(rootPath, "apps", v.name, "index.ts");
+      await import(path.toFileUrl(indexPath).href)
+        .then((res) => {
+          const App: typeof BotApp | undefined = res.default;
+          if (App) this.modules[v.name] = App;
+        })
+        .catch((err) => {
+          log.warning(`应用加载失败 ${v.name}`);
+          log.warning(err);
+        });
     }
 
     const botEventBus = new BotEventBus();
     const botWebSocket = new BotWebSocket(botEventBus);
 
-    for (const { key, module: App } of this.appModules) {
+    for (const [key, App] of Object.entries(this.modules)) {
       this.apps.push(new App(key, botWebSocket.api));
     }
 
     for (const app of this.apps) {
       await app.init();
-      log.info(`已加载应用 ${app.key}${app.name ? `(${app.name})` : ""}`);
+      log.info(`已加载应用 ${app.key}${app.name ? ` - ${app.name}` : ""}`);
       const metadata = BotAppManager.getMetadata(app);
       for (const v of metadata) {
         if ("listen" in v) botEventBus.listen(v);
         if ("cron" in v) cron(v.cron, v.handler);
       }
     }
+
+    botWebSocket.connect();
   }
 }
