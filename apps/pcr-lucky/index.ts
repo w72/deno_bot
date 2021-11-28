@@ -1,5 +1,5 @@
 import { BotApp, BotEvent, name, filter, listen } from "/core.ts";
-import { createCanvas, loadImage } from "canvas";
+import CanvasKit, { Typeface, loadImage, FontMgr } from "canvas";
 import { sampleOne } from "deno_dash/collection/sampleOne.ts";
 import { join, basename } from "std/path/mod.ts";
 
@@ -17,6 +17,8 @@ interface State {
   luckDescGenshin: Desc[];
   bases: string[];
   basesGenshin: string[];
+  fontMgr: FontMgr;
+  fontSakura: Typeface;
 }
 
 export default class App extends BotApp {
@@ -39,10 +41,10 @@ export default class App extends BotApp {
     const imgBase = Deno.readDirSync(assetImgBase);
     const imgBaseGenshin = Deno.readDirSync(assetImgBaseGenshin);
 
-    const canvas = createCanvas(1, 1);
-    canvas.loadFont(fontMamelon, { family: "mamelon" });
-    canvas.loadFont(fontSakura, { family: "sakura" });
+    const fontMgr = CanvasKit.FontMgr.FromData(fontMamelon)!;
 
+    this.state.fontMgr = fontMgr;
+    this.state.fontSakura = (fontMgr as any).MakeTypefaceFromData(fontSakura);
     this.state.luckType = JSON.parse(luckType);
     this.state.luckDesc = JSON.parse(luckDesc);
     this.state.luckDescGenshin = JSON.parse(luckDescGenshin);
@@ -62,6 +64,8 @@ export default class App extends BotApp {
       luckDesc: luckDescPcr,
       basesGenshin,
       luckDescGenshin,
+      fontMgr,
+      fontSakura,
     } = this.state;
     const [bases, luckDesc] =
       Math.random() < 0.5
@@ -83,37 +87,41 @@ export default class App extends BotApp {
     }
     const lines: string[] = text.match(/(.{1,9})/g)!;
 
-    const canvas = createCanvas(480, 480);
-    const ctx = canvas.getContext("2d");
+    const surface = CanvasKit.MakeSurface(480, 480)!;
+    const canvas = surface.getCanvas();
 
     const imgBase = await loadImage(this.asset(assetPath));
-    ctx.drawImage(imgBase, 0, 0);
+    canvas.drawImage(imgBase, 0, 0, new CanvasKit.Paint());
 
-    ctx.save();
-    ctx.font = "45px mamelon";
-    ctx.fillStyle = "#F5F5F5";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(title, 140, 99);
-    ctx.restore();
+    const paraStyle = new CanvasKit.ParagraphStyle({
+      textStyle: {
+        color: CanvasKit.Color(245, 245, 245),
+        fontFamilies: ["Mamelon"],
+        heightMultiplier: 1.2,
+        fontSize: 45,
+      },
+      textAlign: CanvasKit.TextAlign.Center,
+    });
+    const builder = CanvasKit.ParagraphBuilder.Make(paraStyle, fontMgr);
+    builder.addText(title);
+    const paragraph = builder.build();
+    paragraph.layout(160);
+    canvas.drawParagraph(paragraph, 60, 76);
 
-    ctx.save();
-    ctx.font = "25px sakura";
-    ctx.fillStyle = "#323232";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
+    const font = new CanvasKit.Font(fontSakura, 25);
+    const fontPaint = new CanvasKit.Paint();
     for (const [i, line] of lines.entries()) {
-      const lineX = 125 + 15 * lines.length - i * 30;
+      const lineX = 115 + 15 * lines.length - i * 30;
       for (const [j, letter] of Array.from(line).entries()) {
-        ctx.fillText(
-          letter,
-          lineX,
-          200 + ((9 - line.length) / 2) * 28 + 28 * j
-        );
+        const letterY = 195 + ((9 - line.length) / 2) * 28 + 28 * j;
+        canvas.drawText(letter, lineX, letterY, fontPaint, font);
       }
     }
-    ctx.restore();
 
-    await e.reply(canvas.toBuffer());
+    const snapshot = surface.makeImageSnapshot();
+    const buf = snapshot.encodeToBytes()!;
+    snapshot.delete();
+
+    await e.reply(buf);
   }
 }
