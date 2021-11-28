@@ -295,9 +295,10 @@ export class BotAppManager {
         .then((res) => {
           const App: typeof BotApp | undefined = res.default;
           if (App) this.modules[v.name] = App;
+          else log.warning(`应用加载失败：${v.name} 无默认导出`);
         })
         .catch((err) => {
-          log.warning(`应用加载失败 ${v.name}`);
+          log.warning(`应用加载失败：${v.name}`);
           log.warning(err);
         });
     }
