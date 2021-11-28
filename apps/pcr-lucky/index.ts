@@ -24,7 +24,7 @@ interface State {
 export default class App extends BotApp {
   state = {} as State;
 
-  init() {
+  async init() {
     const assetFontMamelon = this.asset("font/Mamelon.otf");
     const assetFontSakura = this.asset("font/sakura.ttf");
     const assetLuckType = this.asset("data/luck_type.json");
@@ -33,13 +33,17 @@ export default class App extends BotApp {
     const assetImgBase = this.asset("imgbase");
     const assetImgBaseGenshin = this.asset("imgbase-genshin");
 
-    const fontMamelon = Deno.readFileSync(assetFontMamelon);
-    const fontSakura = Deno.readFileSync(assetFontSakura);
-    const luckType = Deno.readTextFileSync(assetLuckType);
-    const luckDesc = Deno.readTextFileSync(assetLuckDesc);
-    const luckDescGenshin = Deno.readTextFileSync(assetLuckDescGenshin);
-    const imgBase = Deno.readDirSync(assetImgBase);
-    const imgBaseGenshin = Deno.readDirSync(assetImgBaseGenshin);
+    const fontMamelon = await Deno.readFile(assetFontMamelon);
+    const fontSakura = await Deno.readFile(assetFontSakura);
+    const luckType = await Deno.readTextFile(assetLuckType);
+    const luckDesc = await Deno.readTextFile(assetLuckDesc);
+    const luckDescGenshin = await Deno.readTextFile(assetLuckDescGenshin);
+    const imgBase = [];
+    for await (const v of Deno.readDir(assetImgBase))
+      imgBase.push(join("imgbase", v.name));
+    const imgBaseGenshin = [];
+    for await (const v of Deno.readDir(assetImgBaseGenshin))
+      imgBaseGenshin.push(join("imgbase-genshin", v.name));
 
     const fontMgr = CanvasKit.FontMgr.FromData(fontMamelon)!;
 
@@ -48,10 +52,8 @@ export default class App extends BotApp {
     this.state.luckType = JSON.parse(luckType);
     this.state.luckDesc = JSON.parse(luckDesc);
     this.state.luckDescGenshin = JSON.parse(luckDescGenshin);
-    this.state.bases = Array.from(imgBase).map((v) => join("imgbase", v.name));
-    this.state.basesGenshin = Array.from(imgBaseGenshin).map((v) =>
-      join("imgbase-genshin", v.name)
-    );
+    this.state.bases = imgBase;
+    this.state.basesGenshin = imgBaseGenshin;
   }
 
   @name("抽签")
@@ -111,7 +113,7 @@ export default class App extends BotApp {
     const font = new CanvasKit.Font(fontSakura, 25);
     const fontPaint = new CanvasKit.Paint();
     for (const [i, line] of lines.entries()) {
-      const lineX = 115 + 15 * lines.length - i * 30;
+      const lineX = 114 + 15 * lines.length - i * 30;
       for (const [j, letter] of Array.from(line).entries()) {
         const letterY = 195 + ((9 - line.length) / 2) * 28 + 28 * j;
         canvas.drawText(letter, lineX, letterY, fontPaint, font);
