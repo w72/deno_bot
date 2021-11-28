@@ -4,6 +4,7 @@
 /assets.7z
 /assets.zip
 /*.db
+/*.png
 /apps/*
 !/apps/meme/
 !/apps/pcr-gacha/
