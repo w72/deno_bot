@@ -104,11 +104,11 @@ export function cqMessage(msg: BotMessage): CqMessageSegment[] {
     );
 }
 
-export class BotApp {
+export class BotApp<State = Record<string, any>> {
   name = "";
   description = "";
   log = log;
-  state: Record<string, any> = {};
+  state: State = {} as State;
   config: Record<string, any>;
   assetPath: string;
   constructor(public key: string, public api: BotWebSocket["api"]) {
@@ -125,13 +125,13 @@ export class BotEvent {
   cmd = "";
   at = false;
   admin = false;
-  image = false;
+  image: Record<string, any> | undefined;
   match = {} as RegExpExecArray;
   constructor(public data: CqEventData, public api: BotWebSocket["api"]) {
     this.admin = config.admins.includes(data.user_id);
     if (data.message) {
       this.at = true;
-      this.image = Boolean(data.message.find((v) => v.type === "image")?.data);
+      this.image = data.message.find((v) => v.type === "image")?.data;
       let cmd = data.message
         .filter((v) => v.type === "text")
         .map((v) => v.data.text.trim())

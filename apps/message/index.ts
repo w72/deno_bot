@@ -4,10 +4,10 @@ interface State {
   repeat: Record<number, { message: string; count: number; done?: boolean }>;
 }
 
-export default class App extends BotApp {
+export default class App extends BotApp<State> {
   name = "消息与通知管理";
   description = "同意添加好友请求，发送群成员变动通知，响应特定消息";
-  state: State = { repeat: {} };
+  state = { repeat: {} } as State;
 
   @name("复读")
   @listen("message.group")

@@ -21,7 +21,7 @@ interface State {
   fontSakura: Typeface;
 }
 
-export default class App extends BotApp {
+export default class App extends BotApp<State> {
   state = {} as State;
 
   async init() {
