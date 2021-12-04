@@ -1,6 +1,8 @@
 import { BotApp, BotEvent, name, listen, filter } from "/core.ts";
-import CanvasKit, { loadImage, FontMgr } from "canvas";
+import CanvasKit, { FontMgr } from "canvas";
 import * as ImageScript from "image_script";
+
+import { drawList, drawMeme } from "./draw.ts";
 
 interface State {
   fontMgr: FontMgr;
@@ -27,8 +29,8 @@ export default class App extends BotApp<State> {
     }
     if (!e.image) return;
     const imgBuffer = await fetch(e.image.url).then((r) => r.arrayBuffer());
-    const imgIns = await ImageScript.decode(new Uint8Array(imgBuffer));
-    const imgPNG = await imgIns
+    const img = await ImageScript.decode(new Uint8Array(imgBuffer));
+    const imgPNG = await img
       .resize(160, ImageScript.Image.RESIZE_AUTO)
       ?.encode();
     if (!imgPNG) throw new Error();
@@ -41,70 +43,8 @@ export default class App extends BotApp<State> {
   @filter(/^查看表情$/)
   async onViewList(e: BotEvent) {
     const { fontMgr } = this.state;
-
-    const imgList: string[] = [];
-    for await (const v of Deno.readDir(this.assetPath)) imgList.push(v.name);
-
-    const surfaceWidth = imgList.length < 5 ? imgList.length * 160 : 5 * 160;
-    const surfaceHeight = Math.ceil(imgList.length / 5) * 160;
-
-    const surface = CanvasKit.MakeSurface(surfaceWidth, surfaceHeight)!;
-    const canvas = surface.getCanvas();
-    canvas.clear(CanvasKit.WHITE);
-
-    const textStyle = new CanvasKit.TextStyle({
-      color: CanvasKit.Color(0x3c, 0x40, 0x4c),
-      fontFamilies: ["pcr", "Microsoft YaHei"],
-      heightMultiplier: 1.2,
-      fontSize: 20,
-    });
-
-    const paraStyle = new CanvasKit.ParagraphStyle({
-      textStyle,
-      textAlign: CanvasKit.TextAlign.Center,
-    });
-
-    const fgPaint = new CanvasKit.Paint();
-    fgPaint.setColor(CanvasKit.WHITE);
-    fgPaint.setStyle(CanvasKit.PaintStyle.Stroke);
-    fgPaint.setStrokeWidth(2);
-
-    const bgPaint = new CanvasKit.Paint();
-    bgPaint.setColor(CanvasKit.TRANSPARENT);
-
-    const imgPaint = new CanvasKit.Paint();
-
-    for (const [i, imgPath] of imgList.entries()) {
-      const img = await loadImage(this.asset(imgPath));
-      const x = (i % 5) * 160;
-      const y = Math.floor(i / 5) * 160;
-      const name = imgPath.slice(0, -4);
-      canvas.drawImageRect(
-        img,
-        [0, 0, img.width(), img.height()],
-        [x, y, x + 160, y + (160 * img.height()) / img.width()],
-        imgPaint
-      );
-
-      const builder = CanvasKit.ParagraphBuilder.Make(paraStyle, fontMgr);
-      builder.pushPaintStyle(textStyle, fgPaint, bgPaint);
-      builder.addText(name);
-      const paragraph = builder.build();
-      paragraph.layout(160);
-      canvas.drawParagraph(paragraph, x, y);
-
-      const builder0 = CanvasKit.ParagraphBuilder.Make(paraStyle, fontMgr);
-      builder0.addText(name);
-      const paragraph0 = builder0.build();
-      paragraph0.layout(160);
-      canvas.drawParagraph(paragraph0, x, y);
-    }
-
-    const snapshot = surface.makeImageSnapshot();
-    const buf = snapshot.encodeToBytes()!;
-    snapshot.delete();
-
-    await e.reply(buf);
+    const buf = await drawList({ fontMgr, getAsset: this.asset });
+    return e.reply(buf);
   }
 
   @name("查看单个表情")
@@ -126,52 +66,8 @@ export default class App extends BotApp<State> {
   async onGenerate(e: BotEvent) {
     const { fontMgr } = this.state;
     const [, name, text] = e.match;
-    let img;
-    try {
-      img = await loadImage(this.asset(`${name}.png`));
-    } catch {
-      return e.reply(`未找到名为“${name}”的表情`);
-    }
-    const lines = text.split(" ").filter(Boolean);
-    const maxLineWidth = Math.max(...lines.map((v) => v.length));
-    if (maxLineWidth > 8) return e.reply("每行最多八个字");
-    const fontSize = maxLineWidth > 6 ? 18 : 24;
-    const lineHeight = Math.ceil(fontSize * 1.2);
-    const imgWidth = 160;
-    const imgHeight = (imgWidth / img.width()) * img.height();
-    const surfaceHeight = imgHeight + lineHeight * lines.length;
-
-    const surface = CanvasKit.MakeSurface(imgWidth, surfaceHeight)!;
-    const canvas = surface.getCanvas();
-    canvas.clear(CanvasKit.WHITE);
-
-    canvas.drawImageRect(
-      img,
-      [0, 0, img.width(), img.height()],
-      [0, 0, imgWidth, imgHeight],
-      new CanvasKit.Paint()
-    );
-
-    const paraStyle = new CanvasKit.ParagraphStyle({
-      textStyle: {
-        color: CanvasKit.Color(0x3c, 0x40, 0x4c),
-        fontFamilies: ["pcr", "Microsoft YaHei"],
-        heightMultiplier: 1.2,
-        fontSize,
-      },
-      textAlign: CanvasKit.TextAlign.Center,
-    });
-    const builder = CanvasKit.ParagraphBuilder.Make(paraStyle, fontMgr);
-    builder.addText(lines.join("\n"));
-    const paragraph = builder.build();
-    paragraph.layout(160);
-    canvas.drawParagraph(paragraph, 0, imgHeight);
-
-    const snapshot = surface.makeImageSnapshot();
-    const buf = snapshot.encodeToBytes()!;
-    snapshot.delete();
-
-    await e.reply(buf);
+    const res = await drawMeme({ name, text, fontMgr, getAsset: this.asset });
+    await e.reply(res);
   }
 
   @name("删除表情")

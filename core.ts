@@ -113,6 +113,7 @@ export class BotApp<State = Record<string, any>> {
   assetPath: string;
   constructor(public key: string, public api: BotWebSocket["api"]) {
     this.config = config.apps?.[key] ?? {};
+    this.asset = this.asset.bind(this);
     this.assetPath = path.join(rootPath, "assets", key);
   }
   asset(...paths: string[]) {
