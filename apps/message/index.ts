@@ -7,7 +7,10 @@ interface State {
 export default class App extends BotApp<State> {
   name = "消息与通知管理";
   description = "同意添加好友请求，发送群成员变动通知，响应特定消息";
-  state = { repeat: {} } as State;
+
+  init() {
+    this.state.repeat = {};
+  }
 
   @name("复读")
   @listen("message.group")
