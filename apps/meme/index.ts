@@ -30,9 +30,9 @@ export default class App extends BotApp<State> {
     if (!e.image) return;
     const imgBuffer = await fetch(e.image.url).then((r) => r.arrayBuffer());
     const img = await ImageScript.decode(new Uint8Array(imgBuffer));
-    const imgPNG = await img
-      .resize(160, ImageScript.Image.RESIZE_AUTO)
-      ?.encode();
+    const imgFrame = img instanceof ImageScript.GIF ? img[0] : img;
+    imgFrame.resize(160, ImageScript.Image.RESIZE_AUTO);
+    const imgPNG = await imgFrame.encode();
     if (!imgPNG) throw new Error();
     await Deno.writeFile(this.asset(`${name}.png`), imgPNG);
     return e.reply(`上传表情“${name}”成功`);
@@ -75,9 +75,8 @@ export default class App extends BotApp<State> {
   @filter(/^删除表情\s+([^\s+]+)$/)
   async onDelete(e: BotEvent) {
     const name = e.match[1];
-    const imgPath = this.asset(`${name}.png`);
     try {
-      await Deno.remove(imgPath);
+      await Deno.remove(this.asset(`${name}.png`));
       return e.reply(`删除表情“${name}”成功`);
     } catch {
       return e.reply(`未找到名为“${name}”的表情`);
