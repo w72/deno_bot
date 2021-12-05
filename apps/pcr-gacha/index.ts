@@ -2,7 +2,7 @@ import { BotApp, BotEvent, name, listen, filter, cron } from "/core.ts";
 import { loadImage, Image } from "canvas";
 
 import { ensurePcrFiles, updatePool } from "./utils.ts";
-import { Pool, Assets } from "./types.ts";
+import { Pool, Assets, Names } from "./types.ts";
 
 interface Props {
   pool: string;
@@ -11,7 +11,7 @@ interface State {
   ver: string;
   img: Record<string, Image>;
   pool: Pool;
-  names: Record<number, string[]>;
+  names: Names;
   assets: Assets;
 }
 
