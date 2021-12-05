@@ -114,15 +114,15 @@ export function cqMessage(msg: BotMessage): CqMessageSegment[] {
     );
 }
 
-export class BotApp<State = Record<string, any>> {
+export class BotApp<Props = Record<string, any>, State = Record<string, any>> {
   name = "";
   description = "";
   log = log;
+  props: Props = {} as Props;
   state: State = {} as State;
-  config: Record<string, any>;
   assetPath: string;
   constructor(public key: string, public api: BotWebSocket["api"]) {
-    this.config = config.apps?.[key] ?? {};
+    this.props = config.apps?.[key] ?? {};
     this.asset = this.asset.bind(this);
     this.assetPath = path.join(rootPath, "assets", key);
   }
@@ -322,8 +322,15 @@ export class BotAppManager {
     }
 
     for (const app of this.apps) {
-      await app.init();
-      log.info(`已加载应用 ${app.key}${app.name ? ` - ${app.name}` : ""}`);
+      const appFullName = `${app.key}${app.name ? ` - ${app.name}` : ""}`;
+      try {
+        await app.init();
+      } catch (e) {
+        log.info(`应用初始化失败：${appFullName}`);
+        log.info(e);
+        continue;
+      }
+      log.info(`已加载应用 ${appFullName}`);
       const metadata = BotAppManager.getMetadata(app);
       for (const v of metadata) {
         if ("listen" in v) botEventBus.listen(v);

@@ -1,7 +1,13 @@
 import { BotApp, BotEvent, listen, filter, config } from "/core.ts";
 import { Image, decode } from "image_script";
 
-export default class App extends BotApp {
+interface Props {
+  apikey: string;
+  r18: string;
+  maxHeight: number;
+  quality: number;
+}
+export default class App extends BotApp<Props> {
   name = "涩图";
   description = "来一发瑟图！";
 
@@ -10,9 +16,9 @@ export default class App extends BotApp {
     /^来一?[点份张](.{0,6}?)的?[色涩瑟]图$|^[色涩瑟]图$|^[色涩瑟]图\s(.{0,6}?)$/
   )
   async onGroupMessage(e: BotEvent) {
+    const { apikey, r18, maxHeight, quality } = this.props;
     const keyword = e.match[1] || e.match[2] || "";
     const { names } = config;
-    const { apikey, r18, maxHeight, quality } = this.config;
     const url = "https://api.lolicon.app/setu/";
     const params = new URLSearchParams({ apikey, keyword, r18 });
     const res = await fetch(`${url}?${params}`)

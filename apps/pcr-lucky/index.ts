@@ -21,9 +21,7 @@ interface State {
   fontSakura: Typeface;
 }
 
-export default class App extends BotApp<State> {
-  state = {} as State;
-
+export default class App extends BotApp<never, State> {
   async init() {
     const assetFontMamelon = this.asset("font/Mamelon.otf");
     const assetFontSakura = this.asset("font/sakura.ttf");
