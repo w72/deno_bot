@@ -1,6 +1,6 @@
 // deno-lint-ignore-file camelcase no-explicit-any
 import { Reflect } from "reflect_metadata";
-import { cron } from "deno_cron";
+import { cron as denoCron } from "deno_cron";
 import CanvasKit, { FontMgr } from "canvas";
 import { deferred, Deferred } from "std/async/mod.ts";
 import { parse } from "std/encoding/yaml.ts";
@@ -91,6 +91,10 @@ function filter(a: RegExp | MessageFilter, b?: MessageFilter): MethodDecorator {
     Reflect.defineMetadata("filter", { pattern, ...options }, target, key);
 }
 export { filter };
+
+export function cron(str: string): MethodDecorator {
+  return (target, key) => Reflect.defineMetadata("cron", str, target, key);
+}
 
 export function name(str: string): MethodDecorator {
   return (target, key) => Reflect.defineMetadata("name", str, target, key);
@@ -334,7 +338,7 @@ export class BotAppManager {
       const metadata = BotAppManager.getMetadata(app);
       for (const v of metadata) {
         if ("listen" in v) botEventBus.listen(v);
-        if ("cron" in v) cron(v.cron, v.handler);
+        if ("cron" in v) denoCron(v.cron, v.handler);
       }
     }
 
