@@ -1,10 +1,10 @@
-import CanvasKit, { loadImage, FontMgr } from "canvas";
+import { fontMgr } from "/core.ts";
+import CanvasKit, { loadImage } from "canvas";
 
 export async function drawList(params: {
-  fontMgr: FontMgr;
   getAsset: (name: string) => string;
 }): Promise<Uint8Array> {
-  const { fontMgr, getAsset } = params;
+  const { getAsset } = params;
   const imgList: string[] = [];
   for await (const v of Deno.readDir(getAsset("."))) imgList.push(v.name);
 
@@ -89,10 +89,9 @@ export async function drawList(params: {
 export async function drawMeme(params: {
   name: string;
   text: string;
-  fontMgr: FontMgr;
   getAsset: (name: string) => string;
 }): Promise<string | Uint8Array> {
-  const { name, text, fontMgr, getAsset } = params;
+  const { name, text, getAsset } = params;
   let img;
   try {
     img = await loadImage(getAsset(`${name}.png`));

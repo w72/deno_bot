@@ -1,23 +1,9 @@
 import { BotApp, BotEvent, name, listen, filter } from "/core.ts";
-import CanvasKit, { FontMgr } from "canvas";
 import * as ImageScript from "image_script";
 
 import { drawList, drawMeme } from "./draw.ts";
-
-interface State {
-  fontMgr: FontMgr;
-}
-export default class App extends BotApp<State> {
+export default class App extends BotApp {
   name = "表情生成";
-
-  async init() {
-    const assetFontYh = this.asset("../font/msyh.ttc");
-    const assetFontPcr = this.asset("../font/TTQinYuanJ-W3.ttf");
-    const fontYh = await Deno.readFile(assetFontYh);
-    const fontPcr = await Deno.readFile(assetFontPcr);
-    const fontMgr = CanvasKit.FontMgr.FromData(fontPcr, fontYh)!;
-    this.state.fontMgr = fontMgr;
-  }
 
   @name("上传表情")
   @listen("message")
@@ -42,8 +28,7 @@ export default class App extends BotApp<State> {
   @listen("message")
   @filter(/^查看表情$/)
   async onViewList(e: BotEvent) {
-    const { fontMgr } = this.state;
-    const buf = await drawList({ fontMgr, getAsset: this.asset });
+    const buf = await drawList({ getAsset: this.asset });
     return e.reply(buf);
   }
 
@@ -64,9 +49,8 @@ export default class App extends BotApp<State> {
   @listen("message")
   @filter(/^生成表情\s+([^\s+]+)\s+(.+?)\s*$/s)
   async onGenerate(e: BotEvent) {
-    const { fontMgr } = this.state;
     const [, name, text] = e.match;
-    const res = await drawMeme({ name, text, fontMgr, getAsset: this.asset });
+    const res = await drawMeme({ name, text, getAsset: this.asset });
     await e.reply(res);
   }
 

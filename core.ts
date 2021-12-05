@@ -1,6 +1,7 @@
 // deno-lint-ignore-file camelcase no-explicit-any
 import { Reflect } from "reflect_metadata";
 import { cron } from "deno_cron";
+import CanvasKit, { FontMgr } from "canvas";
 import { deferred, Deferred } from "std/async/mod.ts";
 import { parse } from "std/encoding/yaml.ts";
 import { encode } from "std/encoding/base64.ts";
@@ -68,6 +69,15 @@ const appsPath = path.join(rootPath, "apps");
 const configPath = path.join(rootPath, "config.yml");
 const configFile = await Deno.readTextFile(configPath);
 export const config = parse(configFile) as Record<string, any>;
+
+async function getFontMgr(): Promise<FontMgr> {
+  const assetFontPcr = path.join(rootPath, "assets/font/TTQinYuanJ-W3.ttf");
+  const assetFontYh = path.join(rootPath, "assets/font/msyh.ttc");
+  const fontPcr = await Deno.readFile(assetFontPcr);
+  const fontYh = await Deno.readFile(assetFontYh);
+  return CanvasKit.FontMgr.FromData(fontPcr, fontYh)!;
+}
+export const fontMgr = await getFontMgr();
 
 export function listen(str: string): MethodDecorator {
   return (target, key) => Reflect.defineMetadata("listen", str, target, key);
