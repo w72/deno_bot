@@ -38,3 +38,12 @@ export interface State {
   names: Names;
   dataPaths: DataPaths;
 }
+
+export interface Dimension {
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+}

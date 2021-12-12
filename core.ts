@@ -19,6 +19,7 @@ interface CqEventData {
   post_type: string;
   message_type: string;
   message: CqMessageSegment[];
+  user_id: number;
   group_id: number;
   sub_type: string;
   honor_type: string;

@@ -2,7 +2,7 @@ import { BotApp, BotEvent, name, listen, filter, cron } from "/core.ts";
 import { loadImage } from "canvas";
 
 import { ensurePcrFiles, updatePool } from "./utils.ts";
-import { gacha, get1, get10, get300 } from "./gacha.ts";
+import { gacha10, gacha300, get1, get10, get300 } from "./gacha.ts";
 import { DataPaths, Props, State, Character } from "./types.ts";
 
 export default class App extends BotApp<Props, State> {
@@ -53,10 +53,23 @@ export default class App extends BotApp<Props, State> {
         break;
     }
     try {
-      const res = await gacha(data, {
-        state: this.state,
-        getAsset: this.asset,
-      });
+      let res;
+      if (data.length <= 10) {
+        res = await gacha10(data, {
+          state: this.state,
+          getAsset: this.asset,
+        });
+      } else {
+        const { card, nickname } = await this.api.get_group_member_info({
+          group_id: e.data.group_id,
+          user_id: e.data.user_id,
+        });
+        res = await gacha300(data, {
+          state: this.state,
+          getAsset: this.asset,
+          name: card || nickname,
+        });
+      }
       return e.reply(res);
     } catch (err) {
       this.log.error(err);

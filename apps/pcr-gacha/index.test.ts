@@ -33,3 +33,28 @@ Deno.test("test pcr-gacha gacha10 image generate", async () => {
     },
   } as BotEvent);
 });
+
+Deno.test("test pcr-gacha gacha300 image generate", async () => {
+  const app = new App("pcr-gacha", {
+    get_group_member_info(...params: unknown[]) {
+      console.log(params);
+      return { card: "测试用户" };
+    },
+  });
+  await app.init();
+  await app.onGacha({
+    cmd: "抽一井",
+    data: {
+      group_id: 123,
+      user_id: 12345,
+    },
+    reply: async (v: Uint8Array | null) => {
+      if (!v) {
+        console.log("生成图片失败");
+        return;
+      }
+      const path = join(rootPath, "tests", "pcr-gacha300.png");
+      await Deno.writeFile(path, v);
+    },
+  } as BotEvent);
+});

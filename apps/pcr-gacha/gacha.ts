@@ -1,8 +1,9 @@
-import CanvasKit, { loadImage, Canvas, TextAlign } from "canvas";
+import CanvasKit, { loadImage, Canvas, TextAlign, Image } from "canvas";
 import * as log from "std/log/mod.ts";
+import { countBy } from "deno_dash/collection/countBy.ts";
 import { fontMgr } from "/core.ts";
 import { weightedRandom } from "./utils.ts";
-import { Character, State, Pool } from "./types.ts";
+import { Character, State, Pool, Dimension } from "./types.ts";
 
 function drawText(
   canvas: Canvas,
@@ -10,29 +11,42 @@ function drawText(
     x: number;
     y: number;
     text: string;
-    size?: number;
-    align?: TextAlign;
+    width: number;
+    textAlign?: TextAlign;
+    fontSize?: number;
+    fgColor?: Float32Array;
+    bgColor?: Float32Array;
+    strokeWidth?: number;
   }
 ): void {
-  const { x, y, text, size = 104, align } = params;
-  const colorBlack = CanvasKit.Color(0x3c, 0x40, 0x4c);
+  const {
+    x,
+    y,
+    text,
+    width,
+    textAlign,
+    fontSize = 16,
+    strokeWidth = 2,
+    fgColor = CanvasKit.Color(0x3c, 0x40, 0x4c),
+    bgColor = CanvasKit.WHITE,
+  } = params;
 
   const textStyle = new CanvasKit.TextStyle({
-    color: colorBlack,
+    color: fgColor,
     fontFamilies: ["pcr", "Microsoft YaHei"],
-    heightMultiplier: 1.2,
-    fontSize: 20,
+    heightMultiplier: 1,
+    fontSize,
   });
 
   const paraStyle = new CanvasKit.ParagraphStyle({
     textStyle,
-    textAlign: align,
+    textAlign,
   });
 
   const fgPaint = new CanvasKit.Paint();
-  fgPaint.setColor(CanvasKit.WHITE);
+  fgPaint.setColor(bgColor);
   fgPaint.setStyle(CanvasKit.PaintStyle.Stroke);
-  fgPaint.setStrokeWidth(2);
+  fgPaint.setStrokeWidth(strokeWidth);
 
   const bgPaint = new CanvasKit.Paint();
   bgPaint.setColor(CanvasKit.TRANSPARENT);
@@ -41,13 +55,13 @@ function drawText(
   builder.pushPaintStyle(textStyle, fgPaint, bgPaint);
   builder.addText(text);
   const paragraph = builder.build();
-  paragraph.layout(size);
+  paragraph.layout(width);
   canvas.drawParagraph(paragraph, x, y);
 
   const builder0 = CanvasKit.ParagraphBuilder.Make(paraStyle, fontMgr);
   builder0.addText(text);
   const paragraph0 = builder0.build();
-  paragraph0.layout(size);
+  paragraph0.layout(width);
   canvas.drawParagraph(paragraph0, x, y);
 }
 
@@ -163,9 +177,9 @@ async function drawAvatar(
   );
   const starX = x + 6;
   const starY = y + size - 23;
-  canvas.drawImage(assets.starBg, starX, starY, imgPaint);
+  canvas.drawImage(assets.starBg, starX, starY, null);
   for (let i = star - 1; i >= 0; i--) {
-    canvas.drawImage(assets.star, starX + 13 * i, starY, imgPaint);
+    canvas.drawImage(assets.star, starX + 13 * i, starY, null);
   }
   if (star === 3) {
     canvas.drawImageRect(
@@ -176,7 +190,7 @@ async function drawAvatar(
     );
   }
   if (isNew) {
-    canvas.drawImage(assets.new, x - 12, y - 14, imgPaint);
+    canvas.drawImage(assets.new, x - 12, y - 14, null);
   }
   if (blink && star > 1) {
     const count = star === 2 ? 8 : 36;
@@ -202,17 +216,71 @@ async function drawAvatar(
   }
   if (info) {
     const characterName = name.replace("（", "(").replace("）", ")");
-    drawText(canvas, { text: `${characterName}`, x: x + 4, y: y + 21 });
+    drawText(canvas, {
+      text: `${characterName}`,
+      x: x + 4,
+      y: y + 4,
+      width: size - 8,
+    });
     drawText(canvas, {
       text: info,
-      x: x + size - 6,
-      y: y + size - 6,
-      align: CanvasKit.TextAlign.End,
+      x: x + 4,
+      y: y + size - 22,
+      textAlign: CanvasKit.TextAlign.End,
+      width: size - 8,
     });
   }
 }
 
-export async function gacha(
+function drawImageNine(
+  canvas: Canvas,
+  params: {
+    image: Image;
+    dimension: Dimension;
+    x: number;
+    y: number;
+    ox?: number;
+    oy?: number;
+  }
+) {
+  const { dimension: dim, image, x, y, ox = 0, oy = 0 } = params;
+  const { top: t, right: r, bottom: b, left: l, width: w, height: h } = dim;
+  const imgPainter = new CanvasKit.Paint();
+  const draw = (
+    x0: number,
+    y0: number,
+    w0: number,
+    h0: number,
+    x1: number,
+    y1: number,
+    w1: number,
+    h1: number
+  ) =>
+    canvas.drawImageRect(
+      image,
+      CanvasKit.XYWHRect(x0, y0, w0, h0),
+      CanvasKit.XYWHRect(x1, y1, w1, h1),
+      imgPainter
+    );
+
+  draw(0, 0, l, t, ox, oy, l, t); // 左上
+  draw(l + w, 0, r, t, l + w * x + ox, oy, r, t); // 右上
+  draw(0, t + h, l, b, ox, t + h * y + oy, l, b); // 左下
+  draw(l + w, t + h, r, b, l + w * x + ox, t + h * y + oy, r, b); // 右下
+  for (let i = 0; i < y; i++) {
+    draw(0, t, l, h, ox, t + h * i + oy, l, h); // 左
+    draw(l + w, t, r, h, l + w * x + ox, t + h * i + oy, r, h); // 右边
+  }
+  for (let i = 0; i < x; i++) {
+    draw(l, 0, w, t, l + w * i + ox, oy, w, t); // 上
+    draw(l, t + h, w, b, l + w * i + ox, t + h * y + oy, w, b); // 下
+    for (let j = 0; j < y; j++) {
+      draw(l, t, w, h, l + w * i + ox, t + h * j + oy, w, h); // 中间
+    }
+  }
+}
+
+export async function gacha10(
   data: Character[],
   params: {
     state: State;
@@ -225,7 +293,7 @@ export async function gacha(
   const surface = CanvasKit.MakeSurface(1024, 576)!;
   const canvas = surface.getCanvas();
 
-  canvas.drawImage(assets.background, 0, 0, new CanvasKit.Paint());
+  canvas.drawImage(assets.background, 0, 0, null);
 
   for (const [i, character] of data.entries()) {
     await drawAvatar(canvas, {
@@ -240,9 +308,113 @@ export async function gacha(
   }
 
   const alert = false;
-  if (alert) canvas.drawImage(assets.alert, 278, 415, new CanvasKit.Paint());
+  if (alert) canvas.drawImage(assets.alert, 278, 415, null);
 
   drawCount(canvas, { data, start });
+
+  const snapshot = surface.makeImageSnapshot();
+  const buf = snapshot.encodeToBytes()!;
+  snapshot.delete();
+
+  return buf;
+}
+
+export async function gacha300(
+  data: Character[],
+  params: {
+    state: State;
+    getAsset: (name: string) => string;
+    name?: string;
+  }
+): Promise<Uint8Array> {
+  const { name = "", state, getAsset } = params;
+  const dataStar3 = data
+    .map((v, i) => ({ ...v, index: i + 1 }))
+    .filter((v) => v.star === 3);
+
+  const { assets } = state;
+
+  const bg: Dimension = {
+    width: 26,
+    height: 10,
+    top: 40,
+    right: 39,
+    bottom: 54,
+    left: 39,
+  };
+  const num = 4;
+  const cell = 116;
+  const cellPadding = 12;
+  const contextX = num * cell - cellPadding;
+  const padding = 12;
+  const paddingTop = 80;
+  const paddingBottom = 20;
+  const paddingY = paddingTop + paddingBottom;
+  const contextY = Math.ceil(dataStar3.length / num) * cell - cellPadding;
+  const xRepeatCount = Math.ceil(
+    (contextX + padding * 2 - bg.left - bg.right) / bg.width
+  );
+  const yRepeatCount = Math.ceil(
+    (contextY + paddingY - bg.top - bg.bottom) / bg.height
+  );
+  const width = bg.left + bg.right + bg.width * xRepeatCount;
+  const height = bg.top + bg.bottom + bg.height * yRepeatCount;
+  const paddingLeft = (width - contextX) / 2;
+
+  const surface = CanvasKit.MakeSurface(width, height)!;
+  const canvas = surface.getCanvas();
+
+  drawImageNine(canvas, {
+    image: assets.dialog,
+    dimension: bg,
+    x: xRepeatCount,
+    y: yRepeatCount,
+  });
+  drawText(canvas, {
+    text: `${name}本次下井结果`,
+    x: paddingLeft,
+    y: 8,
+    width: contextX,
+    textAlign: CanvasKit.TextAlign.Center,
+    fontSize: 22,
+    fgColor: CanvasKit.WHITE,
+    bgColor: CanvasKit.Color(0x45, 0x65, 0x8c),
+  });
+
+  for (let i = 0; i < dataStar3.length; i++) {
+    await drawAvatar(canvas, {
+      character: dataStar3[i],
+      x: paddingLeft + cell * (i % num),
+      y: paddingTop + cell * Math.floor(i / num),
+      assets,
+      getAsset,
+      info: `№${dataStar3[i].index}`,
+    });
+  }
+
+  const { pool } = state;
+  const starCounts = countBy((v) => v.star, data);
+  const soul = starCounts[1] + starCounts[2] * 10 + starCounts[3] * 50;
+
+  const upIndex = data.findIndex((v) => pool.up.includes(v.id));
+
+  const colorBlack = CanvasKit.Color(0x3c, 0x40, 0x4c);
+  const paraStyle = new CanvasKit.ParagraphStyle({
+    textStyle: {
+      color: colorBlack,
+      fontFamilies: ["pcr", "Microsoft YaHei"],
+      heightMultiplier: 1,
+      fontSize: 20,
+    },
+  });
+  const builder = CanvasKit.ParagraphBuilder.Make(paraStyle, fontMgr);
+  builder.addText(
+    (upIndex === -1 ? `未获得UP角色` : `第 ${upIndex + 1} 抽获得UP角色`) +
+      `，获得女神的秘石 ${soul} 个`
+  );
+  const paragraph = builder.build();
+  paragraph.layout(contextX + paddingLeft);
+  canvas.drawParagraph(paragraph, paddingLeft, 50);
 
   const snapshot = surface.makeImageSnapshot();
   const buf = snapshot.encodeToBytes()!;
