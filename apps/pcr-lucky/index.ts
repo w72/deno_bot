@@ -22,6 +22,8 @@ interface State {
 }
 
 export default class App extends BotApp<never, State> {
+  name = "PCR&原神抽签";
+
   async init() {
     const assetFontMamelon = this.asset("font/Mamelon.otf");
     const assetFontSakura = this.asset("font/sakura.ttf");
