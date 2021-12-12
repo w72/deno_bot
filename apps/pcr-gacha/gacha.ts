@@ -1,6 +1,7 @@
 import CanvasKit, { loadImage, Canvas, TextAlign, Image } from "canvas";
 import * as log from "std/log/mod.ts";
 import { countBy } from "deno_dash/collection/countBy.ts";
+import { sampleOne } from "deno_dash/collection/sampleOne.ts";
 import { fontMgr } from "/core.ts";
 import { weightedRandom } from "./utils.ts";
 import { Character, State, Pool, Dimension } from "./types.ts";
@@ -440,7 +441,7 @@ export function get1(state: State, isTenth = false): Character {
       ]);
   const list =
     pool[type as keyof Pick<Pool, "up" | "star3" | "star2" | "star1">];
-  const id = list[Math.floor(Math.random() * list.length)];
+  const id = sampleOne(list);
   const star = type === "up" ? 3 : Number(type.slice(-1));
   const name = names[id][1] || names[id][0];
   const avatar = `${id}${star === 3 ? 3 : 1}1`;

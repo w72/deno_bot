@@ -307,16 +307,18 @@ export class BotAppManager {
     for await (const v of Deno.readDir(appsPath)) {
       if (!v.isDirectory) continue;
       const indexPath = path.join(rootPath, "apps", v.name, "index.ts");
-      await import(path.toFileUrl(indexPath).href)
-        .then((res) => {
-          const App: typeof BotApp | undefined = res.default;
-          if (App) this.modules[v.name] = App;
-          else log.warning(`应用加载失败：${v.name} 无默认导出`);
-        })
-        .catch((err) => {
-          log.warning(`应用加载失败：${v.name}`);
-          log.warning(err);
-        });
+      try {
+        const res = await import(path.toFileUrl(indexPath).href);
+        const App: typeof BotApp | undefined = res.default;
+        if (App) {
+          this.modules[v.name] = App;
+        } else {
+          log.warning(`应用加载失败: ${v.name} 无默认导出`);
+        }
+      } catch (err) {
+        log.warning(`应用加载失败: ${v.name}`);
+        log.warning(err);
+      }
     }
 
     const botEventBus = new BotEventBus();
@@ -330,9 +332,9 @@ export class BotAppManager {
       const appFullName = `${app.key}${app.name ? ` - ${app.name}` : ""}`;
       try {
         await app.init();
-      } catch (e) {
-        log.info(`应用初始化失败：${appFullName}`);
-        log.info(e);
+      } catch (err) {
+        log.info(`应用初始化失败: ${appFullName}`);
+        log.info(err);
         continue;
       }
       log.info(`已加载应用 ${appFullName}`);
