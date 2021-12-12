@@ -7,12 +7,13 @@ Deno.test("test pcr-gacha gacha1 image generate", async () => {
   await app.init();
   await app.onGacha({
     cmd: "单抽",
-    reply: (v: Uint8Array | null) => {
+    reply: async (v: Uint8Array | null) => {
       if (!v) {
         console.log("生成图片失败");
         return;
       }
-      Deno.writeFile(join(rootPath, "tests", "pcr-gacha1.png"), v);
+      const path = join(rootPath, "tests", "pcr-gacha1.png");
+      await Deno.writeFile(path, v);
     },
   } as BotEvent);
 });
@@ -22,12 +23,13 @@ Deno.test("test pcr-gacha gacha10 image generate", async () => {
   await app.init();
   await app.onGacha({
     cmd: "十连",
-    reply: (v: Uint8Array | null) => {
+    reply: async (v: Uint8Array | null) => {
       if (!v) {
         console.log("生成图片失败");
         return;
       }
-      Deno.writeFile(join(rootPath, "tests", "pcr-gacha10.png"), v);
+      const path = join(rootPath, "tests", "pcr-gacha10.png");
+      await Deno.writeFile(path, v);
     },
   } as BotEvent);
 });

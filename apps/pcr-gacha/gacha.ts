@@ -2,7 +2,7 @@ import CanvasKit, { loadImage, Canvas, TextAlign } from "canvas";
 import * as log from "std/log/mod.ts";
 import { fontMgr } from "/core.ts";
 import { weightedRandom } from "./utils.ts";
-import { Character, State } from "./types.ts";
+import { Character, State, Pool } from "./types.ts";
 
 function drawText(
   canvas: Canvas,
@@ -68,20 +68,6 @@ function drawCount(
     fontSize: 16,
   });
 
-  const fgPaint = new CanvasKit.Paint();
-  fgPaint.setShader(
-    CanvasKit.Shader.MakeLinearGradient(
-      [0, 0],
-      [0, 1],
-      [CanvasKit.Color(0xf5, 0xc0, 0x50), CanvasKit.Color(0xd5, 0x71, 0x1b)],
-      null,
-      CanvasKit.TileMode.Clamp
-    )
-  );
-
-  const bgPaint = new CanvasKit.Paint();
-  bgPaint.setColor(CanvasKit.TRANSPARENT);
-
   const paraStyle = new CanvasKit.ParagraphStyle({
     textStyle,
     textAlign: CanvasKit.TextAlign.Right,
@@ -92,6 +78,20 @@ function drawCount(
   const paragraph0 = builder0.build();
   paragraph0.layout(80);
   canvas.drawParagraph(paragraph0, 618, 371);
+
+  const fgPaint = new CanvasKit.Paint();
+  fgPaint.setShader(
+    CanvasKit.Shader.MakeLinearGradient(
+      [740, 371],
+      [740, 371 + 16],
+      [CanvasKit.Color(0xf5, 0xc0, 0x50), CanvasKit.Color(0xd5, 0x71, 0x1b)],
+      null,
+      CanvasKit.TileMode.Clamp
+    )
+  );
+
+  const bgPaint = new CanvasKit.Paint();
+  bgPaint.setColor(CanvasKit.TRANSPARENT);
 
   const builder = CanvasKit.ParagraphBuilder.Make(paraStyle, fontMgr);
   builder.pushPaintStyle(textStyle, fgPaint, bgPaint);
@@ -127,6 +127,7 @@ async function drawAvatar(
     blink = false,
   } = params;
   const assetPath = getAsset(`../pcr/icon/unit/${avatar}.png`);
+
   let imgAvatar;
   try {
     imgAvatar = await loadImage(assetPath);
@@ -145,8 +146,8 @@ async function drawAvatar(
     imgAvatar = await loadImage(new Uint8Array(res));
     await Deno.writeFile(assetPath, imgAvatar.encodeToBytes()!);
   }
-  const imgPaint = new CanvasKit.Paint();
 
+  const imgPaint = new CanvasKit.Paint();
   const destRect = CanvasKit.XYWHRect(x, y, size, size);
   canvas.drawImageRect(
     imgAvatar,
@@ -265,7 +266,8 @@ export function get1(state: State, isTenth = false): Character {
         ["star2", s2Prob],
         ["star1", 1000 - upProb - s3Prob - s2Prob],
       ]);
-  const list = (pool as Record<string, any>)[type];
+  const list =
+    pool[type as keyof Pick<Pool, "up" | "star3" | "star2" | "star1">];
   const id = list[Math.floor(Math.random() * list.length)];
   const star = type === "up" ? 3 : Number(type.slice(-1));
   const name = names[id][1] || names[id][0];
