@@ -27,7 +27,7 @@ export default class App extends BotApp<never, State> {
       repeat.count++;
       if (!repeat.done && Math.random() < 1 - 1 / 1.4 ** repeat.count) {
         repeat.done = true;
-        await e.reply(e.data.raw_message, { at_sender: false });
+        await e.reply(e.data.message, { at_sender: false });
       }
     }
   }
