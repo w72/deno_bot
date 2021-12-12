@@ -1,3 +1,5 @@
+import { Image } from "canvas";
+
 export interface Pool {
   up_prob: number;
   s3_prob: number;
@@ -12,8 +14,27 @@ export type Pools = Record<string, Pool>;
 
 export type Names = Record<number, string[]>;
 
-export interface Assets {
+export interface DataPaths {
   ver: string;
   pools: string;
   names: string;
+}
+
+export interface Character {
+  id: number;
+  star: number;
+  name: string;
+  avatar: string;
+}
+
+export interface Props {
+  pool: string;
+}
+
+export interface State {
+  ver: string;
+  assets: Record<string, Image>;
+  pool: Pool;
+  names: Names;
+  dataPaths: DataPaths;
 }

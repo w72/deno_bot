@@ -1,5 +1,5 @@
 import { BotApp, BotEvent, listen, filter, config } from "/core.ts";
-import { Image, decode } from "image_script";
+import * as ImageScript from "image_script";
 
 interface Props {
   apikey: string;
@@ -29,11 +29,11 @@ export default class App extends BotApp<Props> {
       this.log.info(`正在下载涩图 ${url}`);
       try {
         const imgBuffer = await fetch(url).then((r) => r.arrayBuffer());
-        const imgIns = await decode(new Uint8Array(imgBuffer));
-        const imgParsed = await imgIns
-          .resize(Image.RESIZE_AUTO, maxHeight)
-          ?.encodeJPEG(quality);
-        if (!imgParsed) throw new Error();
+        const img = await ImageScript.decode(new Uint8Array(imgBuffer));
+        const imgFrame = img instanceof ImageScript.GIF ? img[0] : img;
+        const imgParsed = await imgFrame
+          .resize(ImageScript.Image.RESIZE_AUTO, maxHeight)
+          .encodeJPEG(quality);
         const description = `${title}\n画师：${author}\npid：${pid}`;
         await e.reply([description, imgParsed]);
         this.log.info(`涩图下载成功`);
