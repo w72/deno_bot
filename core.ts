@@ -40,7 +40,7 @@ interface BotEventListener {
   app: string;
   listen: string;
   filter: MessageFilter;
-  handler: (e: BotEvent) => void;
+  handler: (e: BotEvent) => Promise<void> | void;
 }
 
 interface BotCronListener {
@@ -179,19 +179,16 @@ export class BotEvent {
 
 class BotEventBus {
   #listeners: BotEventListener[] = [];
-  async emit(name: string, e: BotEvent) {
+  async emit(eventName: string, e: BotEvent) {
     for (const { app, filter, listen, handler } of this.#listeners) {
-      if (e.data.message) {
-        const { at, image, admin, pattern } = filter;
-        if (listen !== name) continue;
-        if (at && !e.at) continue;
-        if (image && !e.image) continue;
-        if (admin && !e.admin) continue;
-        if (pattern) {
-          const match = pattern.exec(e.cmd);
-          if (!match) continue;
-          e.match = match;
-        }
+      if (listen !== eventName) continue;
+      if (filter.at && !e.at) continue;
+      if (filter.image && !e.image) continue;
+      if (filter.admin && !e.admin) continue;
+      if (filter.pattern) {
+        const match = filter.pattern.exec(e.cmd);
+        if (!match) continue;
+        e.match = match;
       }
       try {
         await handler(e);
