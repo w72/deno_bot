@@ -1,17 +1,17 @@
 import App from "./index.ts";
-import { BotEvent, rootPath } from "bot";
+import { BotEvent, testPath } from "bot";
 import { join } from "std/path/mod.ts";
 
-Deno.test("test meme view image list", async () => {
+Deno.test("meme view image list", async () => {
   const app = new App("meme", {});
   await app.init();
   await app.onViewList({
     reply: (v: Uint8Array) =>
-      Deno.writeFile(join(rootPath, "tests", "meme-list.png"), v),
+      Deno.writeFile(join(testPath, "meme-list.png"), v),
   } as BotEvent);
 });
 
-Deno.test("test meme generate image", async () => {
+Deno.test("meme generate image", async () => {
   const app = new App("meme", {});
   await app.init();
   await app.onGenerate({
@@ -20,7 +20,7 @@ Deno.test("test meme generate image", async () => {
       if (typeof v === "string") {
         console.log(v);
       } else {
-        await Deno.writeFile(join(rootPath, "tests", "meme-generate.png"), v);
+        await Deno.writeFile(join(testPath, "meme-generate.png"), v);
       }
     },
   } as BotEvent);

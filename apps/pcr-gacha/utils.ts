@@ -6,11 +6,14 @@ export const urls = {
   names: "https://api.redive.lolikon.icu/gacha/unitdata.py",
 };
 
-export async function fetchNames() {
-  const res = await fetch(urls.names).then((r) => r.text());
-  const ctx: { CHARA_NAME: Names } = { CHARA_NAME: {} };
-  eval(`ctx.${res}`);
-  return ctx.CHARA_NAME;
+export function parseNames(text: string): Names {
+  const matches = text.matchAll(/^\s{4}(\d+):\[(.+)\]/gm);
+  const res: Names = {};
+  for (const [, id, namesText] of matches) {
+    const names = namesText.replaceAll("'", "").replaceAll(" ", "").split(",");
+    res[id] = names;
+  }
+  return res;
 }
 
 export async function ensurePcrFiles(paths: DataPaths): Promise<{
@@ -40,7 +43,8 @@ export async function ensurePcrFiles(paths: DataPaths): Promise<{
   try {
     namesText = await Deno.readTextFile(paths.names);
   } catch {
-    const namesJson = await fetchNames();
+    const resPyText = await fetch(urls.names).then((r) => r.text());
+    const namesJson = parseNames(resPyText);
     namesText = JSON.stringify(namesJson);
     await Deno.writeTextFile(paths.names, namesText);
   }
@@ -72,7 +76,8 @@ export async function updatePool(
     const poolsText = await fetch(urls.pools).then((r) => r.text());
     await Deno.writeTextFile(paths.pools, poolsText);
 
-    const namesJson = await fetchNames();
+    const resPyText = await fetch(urls.names).then((r) => r.text());
+    const namesJson = parseNames(resPyText);
     const namesText = JSON.stringify(namesJson);
     await Deno.writeTextFile(paths.names, namesText);
   } catch {

@@ -12,7 +12,7 @@ export interface Pool {
 
 export type Pools = Record<string, Pool>;
 
-export type Names = Record<number, string[]>;
+export type Names = Record<string, string[]>;
 
 export interface DataPaths {
   ver: string;
