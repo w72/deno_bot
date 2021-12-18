@@ -45,7 +45,7 @@ export default class App extends BotApp<never, State> {
   @listen("message")
   @filter(/^在吗?[？?]$/, { at: true })
   onPing(e: BotEvent) {
-    return e.reply("在呀！");
+    return e.reply("在呀!");
   }
 
   @name("查看版本")

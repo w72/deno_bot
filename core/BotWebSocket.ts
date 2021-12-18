@@ -4,12 +4,12 @@ import { deferred, Deferred } from "std/async/mod.ts";
 import { config } from "./utils.ts";
 import { BotEvent } from "./BotEvent.ts";
 import type { BotEventBus } from "./BotEventBus.ts";
-import type { CqResponseData, CqData } from "./types.ts";
+import type { CqResponseData, CqData, BotApi } from "./types.ts";
 
 export class BotWebSocket {
   #ws: WebSocket | null = null;
   #defs: Record<string, Deferred<CqResponseData["data"]>> = {};
-  api: Record<string, any> = new Proxy(
+  api: BotApi = new Proxy(
     {},
     {
       get: (_target, action) => (params: unknown) => {

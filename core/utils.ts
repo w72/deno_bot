@@ -3,14 +3,14 @@ import * as path from "std/path/mod.ts";
 import { parse } from "std/encoding/yaml.ts";
 import { encode } from "std/encoding/base64.ts";
 
-import type { BotMessage, CqMessageSegment } from "./types.ts";
+import type { BotMessage, BotConfig, CqMessageSegment } from "./types.ts";
 
 const filePath = path.dirname(path.fromFileUrl(import.meta.url));
 export const rootPath = path.join(filePath, "..");
 export const appsPath = path.join(rootPath, "apps");
 const configPath = path.join(rootPath, "config.yml");
 const configFile = await Deno.readTextFile(configPath);
-export const config = parse(configFile) as Record<string, any>;
+export const config = parse(configFile) as BotConfig;
 
 async function getFontMgr(): Promise<FontMgr> {
   const assetFontPcr = path.join(rootPath, "assets/font/TTQinYuanJ-W3.ttf");

@@ -1,12 +1,12 @@
 // deno-lint-ignore-file camelcase
 import type { BotEvent } from "./BotEvent.ts";
 
-export type MessageFilter = Partial<{
-  pattern: RegExp;
-  at: boolean;
-  admin: boolean;
-  image: boolean;
-}>;
+export interface MessageFilter {
+  at?: boolean;
+  admin?: boolean;
+  image?: boolean;
+  pattern?: RegExp;
+}
 
 export interface BotEventListener {
   app: string;
@@ -22,6 +22,12 @@ export interface BotCronListener {
 }
 
 export type BotListener = BotEventListener | BotCronListener;
+
+export interface CqMessageSegmentImageData {
+  file: string;
+  type?: "flash";
+  url: string;
+}
 
 export interface CqMessageSegment {
   type: string;
@@ -57,3 +63,11 @@ export type BotMessage =
   | Uint8Array
   | CqMessageSegment
   | (string | Uint8Array | CqMessageSegment | undefined | false)[];
+
+export interface BotApi {
+  [key: string]: (params: Record<string, any>) => Promise<any>;
+}
+
+export interface BotConfig {
+  [key: string]: any;
+}
