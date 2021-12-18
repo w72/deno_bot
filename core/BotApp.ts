@@ -9,6 +9,8 @@ export class BotApp<
 > {
   name = "";
   description = "";
+  private = false;
+
   props: Props = {} as Props;
   state: State = {} as State;
   assetPath: string;
