@@ -1,4 +1,4 @@
-// deno-lint-ignore-file camelcase
+// deno-lint-ignore-file camelcase no-explicit-any
 import type { BotEvent } from "./BotEvent.ts";
 
 export interface MessageFilter {
