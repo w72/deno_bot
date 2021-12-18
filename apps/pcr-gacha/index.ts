@@ -1,5 +1,6 @@
 import { BotApp, BotEvent, name, listen, filter, cron } from "bot";
 import { loadImage } from "canvas";
+import * as log from "std/log/mod.ts";
 
 import { ensurePcrFiles, updatePool } from "./utils.ts";
 import { gacha10, gacha300, get1, get10, get300 } from "./gacha.ts";
@@ -72,7 +73,7 @@ export default class App extends BotApp<Props, State> {
       }
       return e.reply(res);
     } catch (err) {
-      this.log.error(err);
+      log.error(err);
       if (err.message) return e.reply(err.message);
     }
   }
@@ -87,7 +88,7 @@ export default class App extends BotApp<Props, State> {
       const msg = await updatePool(dataPaths, force);
       return e.reply(msg);
     } catch (err) {
-      this.log.error(err);
+      log.error(err);
       if (err.message) return e.reply(err.message);
     }
   }
@@ -98,9 +99,9 @@ export default class App extends BotApp<Props, State> {
     const { dataPaths } = this.state;
     try {
       const msg = await updatePool(dataPaths);
-      this.log.info(msg);
+      log.info(msg);
     } catch (e) {
-      this.log.error(e);
+      log.error(e);
     }
   }
 }

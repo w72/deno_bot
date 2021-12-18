@@ -5,14 +5,19 @@ export function listen(str: string): MethodDecorator {
   return (target, key) => Reflect.defineMetadata("listen", str, target, key);
 }
 
-function filter(options: MessageFilter): MethodDecorator;
-function filter(pattern: RegExp, options?: MessageFilter): MethodDecorator;
-function filter(a: RegExp | MessageFilter, b?: MessageFilter): MethodDecorator {
+export function filter(options: MessageFilter): MethodDecorator;
+export function filter(
+  pattern: RegExp,
+  options?: MessageFilter
+): MethodDecorator;
+export function filter(
+  a: RegExp | MessageFilter,
+  b?: MessageFilter
+): MethodDecorator {
   const [pattern, options] = a instanceof RegExp ? [a, b] : [null, a];
   return (target, key) =>
     Reflect.defineMetadata("filter", { pattern, ...options }, target, key);
 }
-export { filter };
 
 export function cron(str: string): MethodDecorator {
   return (target, key) => Reflect.defineMetadata("cron", str, target, key);

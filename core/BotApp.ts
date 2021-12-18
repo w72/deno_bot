@@ -1,4 +1,3 @@
-import * as log from "std/log/mod.ts";
 import * as path from "std/path/mod.ts";
 
 import { config, rootPath } from "./utils.ts";
@@ -10,7 +9,6 @@ export class BotApp<
 > {
   name = "";
   description = "";
-  log = log;
   props: Props = {} as Props;
   state: State = {} as State;
   assetPath: string;
