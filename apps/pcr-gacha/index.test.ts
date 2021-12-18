@@ -36,9 +36,9 @@ Deno.test("test pcr-gacha gacha10 image generate", async () => {
 
 Deno.test("test pcr-gacha gacha300 image generate", async () => {
   const app = new App("pcr-gacha", {
-    get_group_member_info(...params: unknown[]) {
-      console.log(params);
-      return { card: "测试用户" };
+    get_group_member_info(param: unknown) {
+      console.log(param);
+      return Promise.resolve({ card: "测试用户" });
     },
   });
   await app.init();
