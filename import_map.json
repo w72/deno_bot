@@ -1,7 +1,6 @@
 {
   "imports": {
-    "/": "./",
-    "./": "./",
+    "bot": "./core/index.ts",
     "std/": "https://deno.land/std@0.115.1/",
     "canvas": "https://deno.land/x/canvas@v1.3.0/mod.ts",
     "deno_dash/": "https://deno.land/x/denodash@0.1.3/src/",

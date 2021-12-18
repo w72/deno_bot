@@ -1,4 +1,4 @@
-import { BotApp, BotEvent, listen, filter } from "/core.ts";
+import { BotApp, BotEvent, listen, filter } from "bot";
 
 export default class App extends BotApp {
   name = "能不能好好说话";

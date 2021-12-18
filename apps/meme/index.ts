@@ -1,4 +1,4 @@
-import { BotApp, BotEvent, name, listen, filter } from "/core.ts";
+import { BotApp, BotEvent, name, listen, filter } from "bot";
 import * as ImageScript from "image_script";
 
 import { drawList, drawMeme } from "./draw.ts";

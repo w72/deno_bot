@@ -1,4 +1,4 @@
-import { BotApp, BotEvent, cqMessage, name, listen, filter } from "/core.ts";
+import { BotApp, BotEvent, cqMessage, name, listen, filter } from "bot";
 
 interface State {
   repeat: Record<number, { message: string; count: number; done?: boolean }>;

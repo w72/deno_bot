@@ -1,4 +1,4 @@
-import { BotApp, BotEvent, name, filter, listen } from "/core.ts";
+import { BotApp, BotEvent, name, filter, listen } from "bot";
 import CanvasKit, { Typeface, loadImage, FontMgr } from "canvas";
 import { sampleOne } from "deno_dash/collection/sampleOne.ts";
 import { join, basename } from "std/path/mod.ts";

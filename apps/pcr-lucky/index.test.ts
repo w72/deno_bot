@@ -1,5 +1,5 @@
 import App from "./index.ts";
-import { BotEvent, rootPath } from "/core.ts";
+import { BotEvent, rootPath } from "bot";
 import { join } from "std/path/mod.ts";
 
 Deno.test("test pcr-luck image generate", async () => {

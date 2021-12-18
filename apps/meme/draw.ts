@@ -1,4 +1,4 @@
-import { fontMgr } from "/core.ts";
+import { fontMgr } from "bot";
 import CanvasKit, { loadImage } from "canvas";
 
 export async function drawList(params: {

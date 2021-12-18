@@ -1,4 +1,4 @@
-import { BotApp, BotEvent, name, listen, filter, cron } from "/core.ts";
+import { BotApp, BotEvent, name, listen, filter, cron } from "bot";
 import { loadImage } from "canvas";
 
 import { ensurePcrFiles, updatePool } from "./utils.ts";

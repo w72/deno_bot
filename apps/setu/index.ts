@@ -1,4 +1,4 @@
-import { BotApp, BotEvent, listen, filter, config } from "/core.ts";
+import { BotApp, BotEvent, listen, filter, config } from "bot";
 import * as ImageScript from "image_script";
 
 interface Props {
