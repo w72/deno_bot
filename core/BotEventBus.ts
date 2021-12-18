@@ -4,6 +4,7 @@ import type { BotEventListener } from "./types.ts";
 
 export class BotEventBus {
   #listeners: BotEventListener[] = [];
+
   async emit(eventName: string, e: BotEvent) {
     for (const { app, filter, listen, handler } of this.#listeners) {
       if (listen !== eventName) continue;

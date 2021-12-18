@@ -14,13 +14,16 @@ export class BotApp<
   props: Props = {} as Props;
   state: State = {} as State;
   assetPath: string;
+
   constructor(public key: string, public api: BotApi) {
     this.props = config.apps?.[key] ?? {};
     this.asset = this.asset.bind(this);
     this.assetPath = path.join(rootPath, "assets", key);
   }
+
   asset(...paths: string[]) {
     return path.join(this.assetPath, ...paths);
   }
+
   init(): Promise<void> | void {}
 }

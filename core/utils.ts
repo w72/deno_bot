@@ -8,6 +8,7 @@ import type { BotMessage, BotConfig, CqMessageSegment } from "./types.ts";
 const filePath = path.dirname(path.fromFileUrl(import.meta.url));
 export const rootPath = path.join(filePath, "..");
 export const appsPath = path.join(rootPath, "apps");
+
 const configPath = path.join(rootPath, "config.yml");
 const configFile = await Deno.readTextFile(configPath);
 export const config = parse(configFile) as BotConfig;

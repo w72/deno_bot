@@ -12,6 +12,7 @@ export class BotEvent {
   admin = false;
   image: CqMessageSegmentImageData | undefined;
   match = {} as RegExpExecArray;
+
   constructor(public data: CqEventData, public api: BotApi) {
     this.admin = config.admins.includes(data.user_id);
     if (data.message) {
