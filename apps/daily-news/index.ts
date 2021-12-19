@@ -1,6 +1,6 @@
 import { BotApp, BotEvent, name, listen, filter, cron, cqMessage } from "bot";
 import dayjs from "dayjs";
-import { Deferred, deferred } from "std/async/mod.ts";
+import { Deferred, deferred, delay } from "std/async/mod.ts";
 import { ensureDir } from "std/fs/mod.ts";
 import * as log from "std/log/mod.ts";
 
@@ -72,6 +72,7 @@ export default class App extends BotApp<Props, State> {
           group_id: groupId,
           message: cqMessage(img),
         });
+        await delay(10 * 1000);
       }
     }
   }
