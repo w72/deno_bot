@@ -15,19 +15,19 @@ export default class App extends BotApp<never, State> {
   @name("复读")
   @listen("message.group")
   async onRepeat(e: BotEvent) {
-    const repeat = this.state.repeat[e.data.group_id];
+    const repeat = this.state.repeat[e.target.group_id];
     if (!repeat) {
-      this.state.repeat[e.data.group_id] = {
-        message: e.data.raw_message,
+      this.state.repeat[e.target.group_id] = {
+        message: e.target.raw_message,
         count: 1,
       };
-    } else if (repeat.message !== e.data.raw_message) {
-      delete this.state.repeat[e.data.group_id];
+    } else if (repeat.message !== e.target.raw_message) {
+      delete this.state.repeat[e.target.group_id];
     } else {
       repeat.count++;
       if (!repeat.done && Math.random() < 1 - 1 / 1.4 ** repeat.count) {
         repeat.done = true;
-        await e.reply(e.data.message, { at_sender: false });
+        await e.reply(e.target.message, { at_sender: false });
       }
     }
   }
@@ -35,9 +35,9 @@ export default class App extends BotApp<never, State> {
   @name("复读-自身发送消息会打断复读")
   @listen("message_sent.group")
   onRepeatSelf(e: BotEvent) {
-    const repeat = this.state.repeat[e.data.group_id];
-    if (repeat && repeat.message !== e.data.raw_message) {
-      delete this.state.repeat[e.data.group_id];
+    const repeat = this.state.repeat[e.target.group_id];
+    if (repeat && repeat.message !== e.target.raw_message) {
+      delete this.state.repeat[e.target.group_id];
     }
   }
 
@@ -72,7 +72,7 @@ export default class App extends BotApp<never, State> {
   @name("群成员增加时提示")
   @listen("notice.group_increase")
   async onGroupIncrease(e: BotEvent) {
-    const { self_id: selfId, group_id: groupId, user_id: userId } = e.data;
+    const { self_id: selfId, group_id: groupId, user_id: userId } = e.target;
     if (userId === selfId) return;
     await this.api.send_group_msg({
       group_id: groupId,
@@ -89,7 +89,7 @@ export default class App extends BotApp<never, State> {
       group_id: groupId,
       operator_id: operatorId,
       user_id: userId,
-    } = e.data;
+    } = e.target;
     if (subType === "kick_me") return;
     if (subType === "leave" && userId === selfId) return;
     const { nickname } = await this.api.get_stranger_info({ user_id: userId });

@@ -1,8 +1,9 @@
+import { fontMgr } from "bot";
 import CanvasKit, { loadImage, Canvas, TextAlign, Image } from "canvas";
 import * as log from "std/log/mod.ts";
 import { countBy } from "deno_dash/collection/countBy.ts";
 import { sampleOne } from "deno_dash/collection/sampleOne.ts";
-import { fontMgr } from "bot";
+
 import { weightedRandom } from "./utils.ts";
 import { Character, State, Pool, Dimension } from "./types.ts";
 

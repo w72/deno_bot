@@ -3,33 +3,34 @@ import type {
   BotApi,
   BotMessage,
   CqEventData,
-  CqMessageSegmentImageData,
+  CqMessageImageSegment,
 } from "./types.ts";
 
 export class BotEvent {
   cmd = "";
   at = false;
   admin = false;
-  image: CqMessageSegmentImageData | undefined;
+  image: CqMessageImageSegment["data"] | undefined;
   match = {} as RegExpExecArray;
 
-  constructor(public data: CqEventData, public api: BotApi) {
-    this.admin = config.admins.includes(data.user_id);
-    if (data.message) {
+  constructor(public target: CqEventData, public api: BotApi) {
+    this.admin = config.admins.includes(target.user_id);
+    if (target.message) {
       this.at = true;
-      this.image = data.message.find((v) => v.type === "image")
-        ?.data as CqMessageSegmentImageData;
-      let cmd = data.message
+      this.image = target.message.find(
+        (v): v is CqMessageImageSegment => v.type === "image"
+      )?.data;
+      let cmd = target.message
         .filter((v) => v.type === "text")
         .map((v) => v.data.text.trim())
         .join("");
-      if (data.message_type === "group") {
+      if (target.message_type === "group") {
         const name = config.names.find((v: string) =>
           cmd.toLowerCase().startsWith(v.toLowerCase())
         );
         if (name) cmd = cmd.slice(name.length).trim();
-        const isAtMe = data.message.some(
-          (v) => v.type === "at" && v.data.qq === String(data.self_id)
+        const isAtMe = target.message.some(
+          (v) => v.type === "at" && v.data.qq === String(target.self_id)
         );
         this.at = isAtMe || Boolean(name);
       }
@@ -38,7 +39,7 @@ export class BotEvent {
   }
 
   operation(operation: Record<string, unknown>): Promise<void> {
-    const data = { context: this.data, operation };
+    const data = { context: this.target, operation };
     return this.api[".handle_quick_operation"](data);
   }
 

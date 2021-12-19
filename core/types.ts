@@ -23,10 +23,13 @@ export interface BotCronListener {
 
 export type BotListener = BotEventListener | BotCronListener;
 
-export interface CqMessageSegmentImageData {
-  file: string;
-  type?: "flash";
-  url: string;
+export interface CqMessageImageSegment {
+  type: "image";
+  data: {
+    url: string;
+    file: string;
+    type?: "flash";
+  };
 }
 
 export interface CqMessageSegment {

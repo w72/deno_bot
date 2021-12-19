@@ -1,8 +1,9 @@
-import App from "./index.ts";
-import { urls, parseNames } from "./utils.ts";
 import { BotEvent, testPath } from "bot";
 import { join } from "std/path/mod.ts";
 import { assert } from "std/testing/asserts.ts";
+
+import App from "./index.ts";
+import { urls, parseNames } from "./utils.ts";
 
 Deno.test("pcr-gacha gacha1 image generate", async () => {
   const app = new App("pcr-gacha", {});
@@ -46,7 +47,7 @@ Deno.test("pcr-gacha gacha300 image generate", async () => {
   await app.init();
   await app.onGacha({
     cmd: "抽一井",
-    data: {
+    target: {
       group_id: 123,
       user_id: 12345,
     },

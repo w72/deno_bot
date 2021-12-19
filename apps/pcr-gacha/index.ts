@@ -3,7 +3,7 @@ import { loadImage } from "canvas";
 import * as log from "std/log/mod.ts";
 
 import { ensurePcrFiles, updatePool } from "./utils.ts";
-import { gacha10, gacha300, get1, get10, get300 } from "./gacha.ts";
+import { gacha10, gacha300, get1, get10, get300 } from "./draw.ts";
 import { DataPaths, Props, State, Character } from "./types.ts";
 
 export default class App extends BotApp<Props, State> {
@@ -62,8 +62,8 @@ export default class App extends BotApp<Props, State> {
         });
       } else {
         const { card, nickname } = await this.api.get_group_member_info({
-          group_id: e.data.group_id,
-          user_id: e.data.user_id,
+          group_id: e.target.group_id,
+          user_id: e.target.user_id,
         });
         res = await gacha300(data, {
           state: this.state,
