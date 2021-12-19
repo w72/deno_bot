@@ -1,4 +1,4 @@
-import { BotApp, BotEvent, name, listen, filter } from "bot";
+import { BotApp, BotEvent, name, listen, filter, cron, cqMessage } from "bot";
 import dayjs from "dayjs";
 import { Deferred, deferred } from "std/async/mod.ts";
 import { ensureDir } from "std/fs/mod.ts";
@@ -11,11 +11,15 @@ import {
   draw,
 } from "./draw.ts";
 
+interface Props {
+  groups: number[];
+}
+
 interface State {
   fetching: Deferred<Uint8Array | undefined> | undefined;
 }
 
-export default class App extends BotApp<never, State> {
+export default class App extends BotApp<Props, State> {
   name = "每日新闻";
   description = "每天60秒读懂世界";
 
@@ -56,5 +60,19 @@ export default class App extends BotApp<never, State> {
   async onDailyNews(e: BotEvent) {
     const img = await this.getTodayNewsImage();
     if (img) await e.reply(img);
+  }
+
+  @name("每日新闻推送")
+  @cron("5 8 * * *")
+  async onDailyNewsPush() {
+    const img = await this.getTodayNewsImage();
+    if (img) {
+      for (const groupId of this.props.groups) {
+        await this.api.send_group_msg({
+          group_id: groupId,
+          message: cqMessage(img),
+        });
+      }
+    }
   }
 }
