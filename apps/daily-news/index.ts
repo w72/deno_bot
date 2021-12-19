@@ -58,8 +58,13 @@ export default class App extends BotApp<Props, State> {
   @listen("message.group")
   @filter(/^每日新闻$/)
   async onDailyNews(e: BotEvent) {
-    const img = await this.getTodayNewsImage();
-    if (img) await e.reply(img);
+    try {
+      const img = await this.getTodayNewsImage();
+      if (img) await e.reply(img);
+    } catch (err) {
+      const { message } = err;
+      await e.reply(`获取每日新闻失败${message ? `: ${message}` : ""}`);
+    }
   }
 
   @name("每日新闻推送")
