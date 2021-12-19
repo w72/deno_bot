@@ -1,5 +1,5 @@
 import { Reflect } from "reflect_metadata";
-import { cron as denoCron } from "deno_cron";
+import { cron } from "deno_cron";
 import * as log from "std/log/mod.ts";
 import * as path from "std/path/mod.ts";
 
@@ -69,7 +69,8 @@ export class BotAppManager {
       const metadata = BotAppManager.getMetadata(app);
       for (const v of metadata) {
         if ("listen" in v) botEventBus.listen(v);
-        if ("cron" in v) denoCron(v.cron, v.handler);
+        if ("cron" in v)
+          cron(v.cron, () => Promise.resolve(v.handler()).catch(log.error));
       }
     }
 
