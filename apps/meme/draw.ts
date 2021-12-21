@@ -100,9 +100,9 @@ export async function drawMeme(params: {
   }
   const lines = text.split(" ").filter(Boolean);
   const maxLineWidth = Math.max(...lines.map((v) => v.length));
-  if (maxLineWidth > 8) return "每行最多八个字";
+  if (maxLineWidth > 9) return "每行最多 9 个字";
 
-  const fontSize = maxLineWidth > 6 ? 18 : 24;
+  const fontSize = maxLineWidth > 8 ? 16 : maxLineWidth > 6 ? 18 : 24;
   const lineHeight = Math.ceil(fontSize * 1.2);
   const imgWidth = 160;
   const imgHeight = (imgWidth / img.width()) * img.height();
