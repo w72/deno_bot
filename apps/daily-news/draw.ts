@@ -114,7 +114,7 @@ export async function draw(
     }
     if (item.type === NewsItemType.image) {
       const img = await loadImage(imgCache[getImageFileName(item.value)]);
-      let ratio = i === 0 ? 2.8 : img.width() / img.height();
+      let ratio = img.width() / img.height();
       if (ratio < 16 / 9) ratio = 16 / 9;
       const height = (i === 0 ? width : imageWidth) / ratio;
       drawItems.push({ type: NewsItemType.image, height, img, ratio });
@@ -140,7 +140,7 @@ export async function draw(
         item.img,
         CanvasKit.XYWHRect(
           0,
-          i && (item.img.height() - item.img.width() / item.ratio) / 2,
+          (item.img.height() - item.img.width() / item.ratio) / 2,
           item.img.width(),
           item.img.width() / item.ratio
         ),
