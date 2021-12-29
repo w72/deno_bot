@@ -5,7 +5,7 @@ export default class App extends BotApp {
   description = "查询各种缩写";
 
   @listen("message.group")
-  @filter(/^[?？] ?([a-z0-9]+)$/)
+  @filter(/^[?？]\s?([a-zA-Z0-9]+)$/)
   async onGroupMessage(e: BotEvent) {
     const url = "https://lab.magiconch.com/api/nbnhhsh/guess";
     const text = e.match[1];
