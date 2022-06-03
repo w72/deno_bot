@@ -5,6 +5,8 @@ groups: []
 apps:
   daily-news:
     groups: []
+  moyu:
+    groups: []
   pcr-gacha:
     pool: BL
   setu:
